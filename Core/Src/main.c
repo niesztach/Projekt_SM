@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
 #include "spi.h"
 #include "tim.h"
 #include "usart.h"
@@ -28,6 +29,9 @@
 #include <stdio.h>
 #include "bmp2_config.h"
 #include "pid_regulator.h"
+#include "lcd_i2c.h"
+#include <stdbool.h>
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -58,10 +62,13 @@ unsigned int zadane=0;
 unsigned int zadane_rezystora=0;
 unsigned int zadane_wiatraka=0;
 float current_temp=0;
-float fanControlTest=-1.0;
+float fanControlTest=-1.0;  //tymczasowa zmienna pomocnicza do weryfikacji poprawnosci dzialania PID
 float fanControlTestDriven=-1.0;
-unsigned int zadane_obiektu = 23000;
+unsigned int zadane_obiektu = 27000;
+unsigned int powitanie = 1;
 
+// wyświetlacz
+struct lcd_disp disp;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -156,7 +163,26 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
 	HAL_UART_Receive_IT(&huart3, word, 3);
 }
 
+void display_function()
+{
+	if(powitanie)
+	{
+		sprintf((char*)disp.f_line, "Dzien dobry :)");
+		sprintf((char*)disp.s_line, "smacznej kawusi");
+		lcd_display(&disp);
+		HAL_Delay(1000);
+		powitanie = 0;
+	}
+	else
+	{
+		sprintf((char*)disp.f_line, "Temp. akt.:%d.%02d", temp_int / 1000, temp_int % 1000);
+		sprintf((char*)disp.s_line, "Temp. zad.:%d.%02d", zadane_obiektu / 1000, zadane_obiektu % 1000);
+		lcd_display(&disp);
+	}
 
+	HAL_Delay(2000);
+
+}
 
 
 /* USER CODE END 0 */
@@ -195,6 +221,7 @@ int main(void)
   MX_TIM4_Init();
   MX_TIM3_Init();
   MX_TIM7_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   BMP2_Init(&bmp2dev);// inicjalizacja czujnika
   HAL_TIM_Base_Start_IT(&htim2);// uruchomienie timerow
@@ -204,6 +231,10 @@ int main(void)
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
   HAL_UART_Receive_IT(&huart3, word, 3);
+//wyswietlacz
+  disp.addr = (0x27 << 1);
+  disp.bl = true;
+  lcd_init(&disp);
   /* USER CODE END 2 */
 
   /* Infinite loop */
