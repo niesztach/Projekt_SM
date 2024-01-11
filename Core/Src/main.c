@@ -60,6 +60,7 @@ unsigned int zadane_wiatraka=0;
 float current_temp=0;
 float fanControlTest=-1.0;
 float fanControlTestDriven=-1.0;
+unsigned int zadane_obiektu = 23000;
 
 /* USER CODE END PV */
 
@@ -104,7 +105,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
   		 current_temp = temp_int;
   	}else{
-  		float pwm_duty_f= (999.0*calculate_discrete_pid(&pid1,26000,current_temp));
+  		float pwm_duty_f= (999.0*calculate_discrete_pid(&pid1,zadane_obiektu,current_temp));
   		fanControlTest=pwm_duty_f;
   		uint16_t pwm_duty=0;
   		//saturacja
@@ -112,7 +113,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   		if(pwm_duty_f>999.0)pwm_duty=999;else
   			pwm_duty=(uint16_t)pwm_duty_f;
   		fanControlTestDriven = pwm_duty;
-  		__HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_2,pwm_duty);
+
+  		if(temp_int -600 > zadane_obiektu) __HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_2, 700);
+  		if(temp_int -200 < zadane_obiektu)__HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_2, 0);
+
+
+  		__HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_3,pwm_duty);
 
   	}
 
@@ -195,8 +201,8 @@ int main(void)
   HAL_TIM_Base_Start_IT(&htim7);// uruchomienie timerow
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 100);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 100);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
   HAL_UART_Receive_IT(&huart3, word, 3);
   /* USER CODE END 2 */
 
