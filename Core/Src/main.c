@@ -167,7 +167,7 @@ void display_function()
 {
 	if(powitanie)
 	{
-		sprintf((char*)disp.f_line, "Dzien dobry :)");
+		sprintf((char*)disp.f_line, "Dzie%c dobry %c", '\x4', '\x5');
 		sprintf((char*)disp.s_line, "smacznej kawusi");
 		lcd_display(&disp);
 		HAL_Delay(1000);
@@ -175,8 +175,8 @@ void display_function()
 	}
 	else
 	{
-		sprintf((char*)disp.f_line, "Temp. akt.:%d.%02d", temp_int / 1000, temp_int % 1000);
-		sprintf((char*)disp.s_line, "Temp. zad.:%d.%02d", zadane_obiektu / 1000, zadane_obiektu % 1000);
+		sprintf((char*)disp.f_line, "T. akt.:%d.%02d%cC", temp_int / 1000, temp_int % 1000, '\x7');
+		sprintf((char*)disp.s_line, "T. zad.:%d.%02d%cC", zadane_obiektu / 1000, zadane_obiektu % 1000, '\x8');
 		lcd_display(&disp);
 	}
 
@@ -235,6 +235,7 @@ int main(void)
   disp.addr = (0x27 << 1);
   disp.bl = true;
   lcd_init(&disp);
+  lcd_prog(&disp);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -242,6 +243,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  display_function();
 
     /* USER CODE BEGIN 3 */
   }

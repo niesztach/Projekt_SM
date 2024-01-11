@@ -4,5 +4,5 @@
 ../Core/Src/main.c:149:6:HAL_UART_RxCpltCallback	3
 ../Core/Src/main.c:166:6:display_function	2
 ../Core/Src/main.c:194:5:main	1
-../Core/Src/main.c:255:6:SystemClock_Config	4
-../Core/Src/main.c:315:6:Error_Handler	1
+../Core/Src/main.c:257:6:SystemClock_Config	4
+../Core/Src/main.c:317:6:Error_Handler	1
