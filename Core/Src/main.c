@@ -18,6 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "adc.h"
+#include "dma.h"
 #include "i2c.h"
 #include "spi.h"
 #include "tim.h"
@@ -66,9 +68,10 @@ float fanControlTest=-1.0;  //tymczasowa zmienna pomocnicza do weryfikacji popra
 float fanControlTestDriven=-1.0;
 unsigned int zadane_obiektu = 27000;
 unsigned int powitanie = 1;
-
+uint16_t readValue_potencjometr=0;
 // wyświetlacz
 struct lcd_disp disp;
+unsigned int test = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -215,13 +218,15 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART3_UART_Init();
+  MX_DMA_Init();
   MX_SPI4_Init();
   MX_TIM2_Init();
   MX_TIM4_Init();
   MX_TIM3_Init();
   MX_TIM7_Init();
   MX_I2C1_Init();
+  MX_USART3_UART_Init();
+  MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
   BMP2_Init(&bmp2dev);// inicjalizacja czujnika
   HAL_TIM_Base_Start_IT(&htim2);// uruchomienie timerow
@@ -236,14 +241,20 @@ int main(void)
   disp.bl = true;
   lcd_init(&disp);
   lcd_prog(&disp);
+  //potencjometr
+  //HAL_ADC_Start(&hadc1);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
+	  HAL_ADC_Start(&hadc1);
 	  display_function();
+	  HAL_ADC_PollForConversion(&hadc1, 1000);
+	  readValue_potencjometr = HAL_ADC_GetValue(&hadc1);
+	  zadane_obiektu = readValue_potencjometr*5.36 +18000.0;
+    /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
