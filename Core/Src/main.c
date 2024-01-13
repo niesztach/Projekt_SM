@@ -84,6 +84,8 @@ uint16_t readValue_potencjometr=0;
 // wyświetlacz
 struct lcd_disp disp;
 unsigned int test = 0;
+volatile uint8_t sd_card_operation_flag = 0;
+int value;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -102,25 +104,56 @@ void SystemClock_Config(void);
 pid_t2 pid1={.param.Kp=1.2,.param.Ki=0.002, .param.Kd=0,.param.dt=1.0, .previous_error=0, .previous_integral=0};
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-  if(htim == &htim2)
-  {
-    static unsigned int cnt = 0;
-    cnt++;
-    BMP2_ReadData(&bmp2dev, &press, &temp);
+	static unsigned int cnt = 0;
+//	    static unsigned int sd_timer = 0;
 
-    temp_int = 1000*temp;
-    press_int = 100*press;
+	    if(htim == &htim2)
+	    {
+	        cnt++;
+	        BMP2_ReadData(&bmp2dev, &press, &temp);
 
-    if(cnt == 4)
-    {
-      uint8_t tx_buffer[128];
-      int tx_msg_len = sprintf((char*)tx_buffer,
-    		  "Temperature: %2u.%03u degC; Pressure: %5u.%02u hPa\r",
-    		  temp_int / 1000, temp_int % 1000,
-			  press_int / 100, press_int % 100);
-      HAL_UART_Transmit(&huart3, tx_buffer, tx_msg_len, 100);
-      cnt = 0;
-    }
+	        temp_int = 1000*temp;
+	        press_int = 100*press;
+
+	        if(cnt == 4)
+	        {
+	            cnt = 0;
+	            uint8_t tx_buffer[128];
+	            int tx_msg_len = sprintf((char*)tx_buffer,
+	                    "Temperature: %2u.%03u degC; Pressure: %5u.%02u hPa\r",
+	                    temp_int / 1000, temp_int % 1000,
+	                    press_int / 100, press_int % 100);
+	            HAL_UART_Transmit(&huart3, tx_buffer, tx_msg_len, 100);
+
+	            sd_card_operation_flag = 1;
+
+//	                // Test odczytu z karty SD
+//	   /*start */             if (f_mount(&fs, "", 0) == FR_OK) {
+//	                    if (f_open(&fil, "text.txt", FA_READ) == FR_OK) {
+//	                        char read_buffer[128];
+//	                        UINT br; // Liczba odczytanych bajtów
+//	                        if (f_read(&fil, read_buffer, sizeof(read_buffer)-1, &br) == FR_OK) {
+//	                            if (br > 0) {
+//	                                // Dane zostały odczytane
+//	                                read_buffer[br] = '\0';
+//	                                HAL_UART_Transmit(&huart3, (uint8_t*)read_buffer, br, 1000);
+//	                            } else {
+//	                                // Brak danych do odczytu
+//	                                HAL_UART_Transmit(&huart3, (uint8_t*)"No data to read\r\n", 17, 1000);
+//	                            }
+//	                        } else {
+//	                            // Błąd odczytu
+//	                            HAL_UART_Transmit(&huart3, (uint8_t*)"Read error\r\n", 12, 1000);
+//	                        }
+//
+//
+//	                        f_close(&fil);
+//	                    }
+//	                    f_mount(NULL, "", 0);
+//
+//	    /*koniec/*        	     */}
+
+	            // ... reszta kodu ... 	        }
   }
   //pid
   if(htim == &htim7){
@@ -143,8 +176,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   		__HAL_TIM_SET_COMPARE(&htim3,TIM_CHANNEL_3,pwm_duty);
 
   	}
-
-
 }
 
 void wypelnienie1(uint16_t duty)
@@ -271,6 +302,33 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
+	  if (sd_card_operation_flag) {
+	         // Operacje na karcie SD
+	         if (f_mount(&fs, "", 0) == FR_OK) {
+	        	 if (f_open(&fil, "text.txt", FA_READ) == FR_OK) {
+	        	     char read_buffer[128];
+	        	     UINT br; // Liczba odczytanych bajtów
+	        	     if (f_read(&fil, read_buffer, sizeof(read_buffer)-1, &br) == FR_OK) {
+	        	         if (br > 0) {
+	        	             // Dane zostały odczytane
+	        	             read_buffer[br] = '\0';
+	        	             // Możesz tutaj użyć danych z read_buffer
+	        	             value ++;
+	        	         }
+	        	     }
+	        	     f_close(&fil);
+
+	        	 }
+	             f_mount(NULL, "", 0);
+
+
+	         }
+
+	         // Zerowanie flagi tuż po wykonaniu operacji na karcie SD
+	         sd_card_operation_flag = 0;
+	     }
+
   }
   /* USER CODE END 3 */
 }
