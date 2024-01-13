@@ -304,29 +304,31 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
 	  if (sd_card_operation_flag) {
-	         // Operacje na karcie SD
+	         sd_card_operation_flag = 0; // Zeruj flagę
+
 	         if (f_mount(&fs, "", 0) == FR_OK) {
-	        	 if (f_open(&fil, "text.txt", FA_READ) == FR_OK) {
-	        	     char read_buffer[128];
-	        	     UINT br; // Liczba odczytanych bajtów
-	        	     if (f_read(&fil, read_buffer, sizeof(read_buffer)-1, &br) == FR_OK) {
-	        	         if (br > 0) {
-	        	             // Dane zostały odczytane
-	        	             read_buffer[br] = '\0';
-	        	             // Możesz tutaj użyć danych z read_buffer
-	        	             value ++;
-	        	         }
-	        	     }
-	        	     f_close(&fil);
+	             if (f_open(&fil, "text.txt", FA_OPEN_APPEND | FA_WRITE) == FR_OK) {
+	                 char log_buffer[128];
+	                 int log_length = sprintf(log_buffer, "Temperature: %2u.%03u degC; Pressure: %5u.%02u hPa\r\n",
+	                                          temp_int / 1000, temp_int % 1000, press_int / 100, press_int % 100);
 
-	        	 }
+	                 UINT bytes_written;
+	                 FRESULT write_result = f_write(&fil, log_buffer, log_length, &bytes_written);
+
+	                 if (write_result == FR_OK && bytes_written == log_length) {
+	                     // Dane zostały pomyślnie zapisane do pliku
+	                     // Opcjonalnie, możesz dodać tutaj dodatkowy kod, np. logowanie sukcesu
+	                	 value ++;
+	                 } else {
+	                     // Wystąpił błąd podczas zapisu
+	                     // Opcjonalnie, możesz dodać tutaj kod obsługi błędów
+	                	value = value *10;
+	                 }
+
+	                 f_close(&fil);
+	             }
 	             f_mount(NULL, "", 0);
-
-
 	         }
-
-	         // Zerowanie flagi tuż po wykonaniu operacji na karcie SD
-	         sd_card_operation_flag = 0;
 	     }
 
   }
