@@ -20,6 +20,7 @@
 #include "main.h"
 #include "adc.h"
 #include "dma.h"
+#include "fatfs.h"
 #include "i2c.h"
 #include "spi.h"
 #include "tim.h"
@@ -33,7 +34,9 @@
 #include "pid_regulator.h"
 #include "lcd_i2c.h"
 #include <stdbool.h>
-#include <stdio.h>
+#include "fatfs_sd.h"
+#include <string.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +47,15 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+
+//odczyt z karty microsd
+FATFS fs;
+FATFS *pfs;
+FIL fil;
+FRESULT fres;
+DWORD fre_clust;
+uint32_t totalSpace, freeSpace;
+char bufffer[100];
 
 /* USER CODE END PD */
 
@@ -227,6 +239,8 @@ int main(void)
   MX_I2C1_Init();
   MX_USART3_UART_Init();
   MX_ADC1_Init();
+  MX_SPI1_Init();
+  MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
   BMP2_Init(&bmp2dev);// inicjalizacja czujnika
   HAL_TIM_Base_Start_IT(&htim2);// uruchomienie timerow
