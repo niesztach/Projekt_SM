@@ -56,6 +56,7 @@ FRESULT fres;
 DWORD fre_clust;
 uint32_t totalSpace, freeSpace;
 char bufffer[100];
+int time_counter=-1;
 
 /* USER CODE END PD */
 
@@ -105,55 +106,23 @@ pid_t2 pid1={.param.Kp=1.2,.param.Ki=0.002, .param.Kd=0,.param.dt=1.0, .previous
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	static unsigned int cnt = 0;
-//	    static unsigned int sd_timer = 0;
-
 	    if(htim == &htim2)
 	    {
 	        cnt++;
-	        BMP2_ReadData(&bmp2dev, &press, &temp);
+	        BMP2_ReadData(&bmp2dev, NULL, &temp); //odczyt temperatury z czujnika
 
 	        temp_int = 1000*temp;
-	        press_int = 100*press;
 
 	        if(cnt == 4)
 	        {
 	            cnt = 0;
 	            uint8_t tx_buffer[128];
-	            int tx_msg_len = sprintf((char*)tx_buffer,
-	                    "Temperature: %2u.%03u degC; Pressure: %5u.%02u hPa\r",
-	                    temp_int / 1000, temp_int % 1000,
-	                    press_int / 100, press_int % 100);
-	            HAL_UART_Transmit(&huart3, tx_buffer, tx_msg_len, 100);
+	            int tx_msg_len = sprintf((char*)tx_buffer, "%d\r\n",
+	                                     temp_int / 1000);
 
-	            sd_card_operation_flag = 1;
+	            HAL_UART_Transmit(&huart3, tx_buffer, tx_msg_len, HAL_MAX_DELAY);
 
-//	                // Test odczytu z karty SD
-//	   /*start */             if (f_mount(&fs, "", 0) == FR_OK) {
-//	                    if (f_open(&fil, "text.txt", FA_READ) == FR_OK) {
-//	                        char read_buffer[128];
-//	                        UINT br; // Liczba odczytanych bajtów
-//	                        if (f_read(&fil, read_buffer, sizeof(read_buffer)-1, &br) == FR_OK) {
-//	                            if (br > 0) {
-//	                                // Dane zostały odczytane
-//	                                read_buffer[br] = '\0';
-//	                                HAL_UART_Transmit(&huart3, (uint8_t*)read_buffer, br, 1000);
-//	                            } else {
-//	                                // Brak danych do odczytu
-//	                                HAL_UART_Transmit(&huart3, (uint8_t*)"No data to read\r\n", 17, 1000);
-//	                            }
-//	                        } else {
-//	                            // Błąd odczytu
-//	                            HAL_UART_Transmit(&huart3, (uint8_t*)"Read error\r\n", 12, 1000);
-//	                        }
-//
-//
-//	                        f_close(&fil);
-//	                    }
-//	                    f_mount(NULL, "", 0);
-//
-//	    /*koniec/*        	     */}
-
-	            // ... reszta kodu ... 	        }
+	            sd_card_operation_flag = 1;	        }
   }
   //pid
   if(htim == &htim7){
@@ -305,12 +274,15 @@ int main(void)
 
 	  if (sd_card_operation_flag) {
 	         sd_card_operation_flag = 0; // Zeruj flagę
+	         time_counter++; //czas probki
 
 	         if (f_mount(&fs, "", 0) == FR_OK) {
-	             if (f_open(&fil, "text.txt", FA_OPEN_APPEND | FA_WRITE) == FR_OK) {
+	             if (f_open(&fil, "log-file.csv", FA_OPEN_APPEND | FA_WRITE) == FR_OK) { //dziala na istniejacym pliku
+//	        	 if (f_open(&fil, "log-file.csv", FA_WRITE | FA_CREATE_ALWAYS) == FR_OK) { //czysci plik przed zadzialaniem
 	                 char log_buffer[128];
-	                 int log_length = sprintf(log_buffer, "Temperature: %2u.%03u degC; Pressure: %5u.%02u hPa\r\n",
-	                                          temp_int / 1000, temp_int % 1000, press_int / 100, press_int % 100);
+	                 int log_length = sprintf(log_buffer, "%d,Temperature:,%u.%03u,DegC\r\n",
+	                                          time_counter, temp_int / 1000, temp_int % 1000);
+
 
 	                 UINT bytes_written;
 	                 FRESULT write_result = f_write(&fil, log_buffer, log_length, &bytes_written);
